@@ -1,0 +1,46 @@
+MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
+
+AGENT_PACKAGE = ENV['AGENT_PACKAGE'] || "wazuh-agent_4.14.0-0_amd64_d2a25de.deb"
+
+DEFAULT_MEMORY = ENV['VM_MEMORY'] ? ENV['VM_MEMORY'].to_i : 4096
+DEFAULT_CPUS   = ENV['VM_CPUS']   ? ENV['VM_CPUS'].to_i   : 4
+
+BOXES = [
+    { name: "debian10", box: "generic/debian10" },
+    { name: "debian11", box: "generic/debian11" },
+    { name: "debian12", box: "debian/bookworm64" },
+    { name: "ubuntu2004", box: "generic/ubuntu2004" },
+    { name: "ubuntu2204", box: "generic/ubuntu2204" },
+    { name: "ubuntu2404", box: "bento/ubuntu-24.04" },
+]
+
+Vagrant.configure("2") do |config|
+    BOXES.each do |vm|
+        config.vm.define vm[:name] do |node|
+            node.vm.box = vm[:box]
+            node.vm.hostname = "#{vm[:name]}.wazuh.test"
+            node.vm.network "private_network", type: "dhcp"
+
+            node.vm.synced_folder "../common", "/vagrant/common"
+            node.vm.synced_folder "./scripts", "/vagrant/scripts"
+            node.vm.synced_folder "./packages", "/vagrant/packages"
+            node.vm.synced_folder "../queries", "/vagrant/queries"
+            node.vm.synced_folder "../results", "/vagrant/results"
+
+            node.vm.provider "virtualbox" do |vb|
+                vb.memory = DEFAULT_MEMORY
+                vb.cpus   = DEFAULT_CPUS
+                vb.default_nic_type = "virtio"
+            end
+
+            node.vm.provision "shell", inline: <<-SHELL
+            chmod +x /vagrant/scripts/install_agent.sh
+            chmod +x /vagrant/common/*.sh
+            /vagrant/scripts/install_agent.sh "/vagrant/packages/#{AGENT_PACKAGE}" "#{MANAGER_IP}"
+            #/vagrant/common/configure_agent.sh #{MANAGER_IP}
+            /vagrant/common/install_osquery.sh
+            /vagrant/common/run_queries.sh /vagrant/queries/osquery_queries.conf
+            SHELL
+        end
+    end
+end
