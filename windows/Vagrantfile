@@ -1,0 +1,40 @@
+MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
+
+AGENT_PACKAGE = ENV['AGENT_PACKAGE'] || "wazuh-agent_4.14.0-0_windows_d2a25de.msi"
+
+DEFAULT_MEMORY = ENV['VM_MEMORY'] ? ENV['VM_MEMORY'].to_i : 4096
+DEFAULT_CPUS   = ENV['VM_CPUS']   ? ENV['VM_CPUS'].to_i   : 4
+
+BOXES = [
+    { name: "win10", box: "gusztavvargadr/windows-10" },
+    { name: "win11", box: "gusztavvargadr/windows-11-24h2-enterprise-ltsc" },
+    { name: "win2016", box: "mwrock/Windows2016" },
+    { name: "win2019", box: "gusztavvargadr/windows-server-2019-standard" },
+    { name: "win2022", box: "gusztavvargadr/windows-server-2022-standard" },
+    { name: "win2025", box: "gusztavvargadr/windows-server-2025-standard" }
+]
+
+Vagrant.configure("2") do |config|
+    BOXES.each do |vm|
+        config.vm.define vm[:name] do |node|
+            node.vm.box = vm[:box]
+            node.vm.communicator = "winrm"
+            node.vm.hostname = "#{vm[:name]}-wazuh-test"
+            node.vm.network "private_network", type: "dhcp"
+
+            node.vm.synced_folder "./scripts", "C:/scripts"
+            node.vm.synced_folder "./packages", "C:/packages"
+            node.vm.synced_folder "./queries", "C:/queries"
+            node.vm.synced_folder "../results", "C:/results"
+
+            node.vm.provider "virtualbox" do |vb|
+                vb.memory = DEFAULT_MEMORY
+                vb.cpus   = DEFAULT_CPUS
+            end
+
+            node.vm.provision "shell", privileged: true, path: "scripts/install_agent.ps1", args: "C:\\packages\\#{AGENT_PACKAGE} #{MANAGER_IP}"
+            node.vm.provision "shell", privileged: true, path: "scripts/install_osquery.ps1"
+            node.vm.provision "shell", privileged: true, path: "scripts/run_queries.ps1", args: "C:\\queries\\osquery_queries.conf"
+        end
+    end
+end

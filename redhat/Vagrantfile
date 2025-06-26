@@ -6,19 +6,19 @@ DEFAULT_MEMORY = ENV['VM_MEMORY'] ? ENV['VM_MEMORY'].to_i : 4096
 DEFAULT_CPUS   = ENV['VM_CPUS']   ? ENV['VM_CPUS'].to_i   : 4
 
 BOXES = [
-  { name: "rhel7", box: "generic/rhel7" },
-  { name: "rhel8", box: "generic/rhel8" },
-  { name: "rhel9", box: "generic/rhel9" },
-  { name: "centos7", box: "bento/centos-7" },
-  { name: "centos8", box: "generic/centos8" },
-  { name: "centos9s", box: "generic/centos9s" },
-  { name: "centos10", box: "centos/stream10" },
-  { name: "oracle9", box: "generic/oracle9" },
-  { name: "amazon2", box: "bento/amazonlinux-2" },
-  { name: "amazon2023", box: "gbailey/al2023" },
-  { name: "opensuse15", box: "generic/opensuse15" },
-  { name: "fedora40", box: "fedora/40-cloud-base" },
-  { name: "fedora41", box: "fedora/41-cloud-base" }
+    { name: "rhel7", box: "generic/rhel7" },
+    { name: "rhel8", box: "generic/rhel8" },
+    { name: "rhel9", box: "generic/rhel9" },
+    { name: "centos7", box: "bento/centos-7" },
+    { name: "centos8", box: "generic/centos8" },
+    { name: "centos9s", box: "generic/centos9s" },
+    { name: "centos10", box: "centos/stream10" },
+    { name: "oracle9", box: "generic/oracle9" },
+    { name: "amazon2", box: "bento/amazonlinux-2" },
+    { name: "amazon2023", box: "gbailey/al2023" },
+    { name: "opensuse15", box: "generic/opensuse15" },
+    { name: "fedora40", box: "fedora/40-cloud-base" },
+    { name: "fedora41", box: "fedora/41-cloud-base" }
 ]
 
 Vagrant.configure("2") do |config|
