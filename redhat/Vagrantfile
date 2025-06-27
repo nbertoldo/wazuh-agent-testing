@@ -1,9 +1,22 @@
 MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
 
-AGENT_PACKAGE = ENV['AGENT_PACKAGE'] || "wazuh-agent_4.14.0-0_x86_64_d2a25de.rpm"
-
 DEFAULT_MEMORY = ENV['VM_MEMORY'] ? ENV['VM_MEMORY'].to_i : 4096
 DEFAULT_CPUS   = ENV['VM_CPUS']   ? ENV['VM_CPUS'].to_i   : 4
+
+# Detect the latest agent package in the ./packages directory
+# It assumes the package is a .rpm file and uses the latest modified one.
+# If no package is found, it aborts with an error message.
+AGENT_PACKAGE = Dir["./packages/wazuh-agent_*.rpm"].max_by { |f| File.mtime(f) }
+
+if AGENT_PACKAGE.nil?
+  abort "❌ No agent package found in ./packages directory. Please ensure you have a .rpm package available."
+elsif !File.exist?(AGENT_PACKAGE)
+  abort "❌ The specified agent package does not exist: #{AGENT_PACKAGE}. Please check the path."
+else
+  puts "✅ Using agent package: #{AGENT_PACKAGE}"
+end
+
+AGENT_PACKAGE_PATH = "/vagrant/packages/#{File.basename(AGENT_PACKAGE)}"
 
 BOXES = [
     { name: "rhel7", box: "generic/rhel7" },
@@ -40,14 +53,19 @@ Vagrant.configure("2") do |config|
                 vb.default_nic_type = "virtio"
             end
 
-            node.vm.provision "shell", inline: <<-SHELL
-            chmod +x /vagrant/scripts/install_agent.sh
-            chmod +x /vagrant/common/*.sh
-            /vagrant/scripts/install_agent.sh "/vagrant/packages/#{AGENT_PACKAGE}" "#{MANAGER_IP}"
-            #/vagrant/common/configure_agent.sh #{MANAGER_IP}
-            /vagrant/common/install_osquery.sh
-            /vagrant/common/run_queries.sh /vagrant/queries/osquery_queries.conf
-            SHELL
+            node.vm.provision "shell",
+            name: "Install Wazuh Agent",
+            path: "scripts/install_agent.sh",
+            args: ["#{AGENT_PACKAGE_PATH}", "#{MANAGER_IP}"]
+
+            node.vm.provision "shell",
+            name: "Install osquery",
+            path: "../common/install_osquery.sh"
+
+            node.vm.provision "shell",
+            name: "Run osquery queries",
+            path: "../common/run_queries.sh",
+            args: ["/vagrant/queries/osquery_queries.conf"]
         end
     end
 end

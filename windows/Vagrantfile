@@ -1,9 +1,22 @@
 MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
 
-AGENT_PACKAGE = ENV['AGENT_PACKAGE'] || "wazuh-agent_4.14.0-0_windows_d2a25de.msi"
-
 DEFAULT_MEMORY = ENV['VM_MEMORY'] ? ENV['VM_MEMORY'].to_i : 4096
 DEFAULT_CPUS   = ENV['VM_CPUS']   ? ENV['VM_CPUS'].to_i   : 4
+
+# Detect the latest agent package in the ./packages directory
+# It assumes the package is a .msi file and uses the latest modified one.
+# If no package is found, it aborts with an error message.
+AGENT_PACKAGE = Dir["./packages/wazuh-agent_*.msi"].max_by { |f| File.mtime(f) }
+
+if AGENT_PACKAGE.nil?
+  abort "❌ No agent package found in ./packages directory. Please ensure you have a .msi package available."
+elsif !File.exist?(AGENT_PACKAGE)
+  abort "❌ The specified agent package does not exist: #{AGENT_PACKAGE}. Please check the path."
+else
+  puts "✅ Using agent package: #{AGENT_PACKAGE}"
+end
+
+AGENT_PACKAGE_PATH = "C:\\packages\\#{File.basename(AGENT_PACKAGE)}"
 
 BOXES = [
     { name: "win10", box: "gusztavvargadr/windows-10" },
@@ -32,9 +45,22 @@ Vagrant.configure("2") do |config|
                 vb.cpus   = DEFAULT_CPUS
             end
 
-            node.vm.provision "shell", privileged: true, path: "scripts/install_agent.ps1", args: "C:\\packages\\#{AGENT_PACKAGE} #{MANAGER_IP}"
-            node.vm.provision "shell", privileged: true, path: "scripts/install_osquery.ps1"
-            node.vm.provision "shell", privileged: true, path: "scripts/run_queries.ps1", args: "C:\\queries\\osquery_queries.conf"
+            node.vm.provision "shell",
+                name: "Install Wazuh Agent",
+                privileged: true,
+                path: "scripts/install_agent.ps1",
+                args: ["#{AGENT_PACKAGE_PATH}", "#{MANAGER_IP}"]
+
+            node.vm.provision "shell",
+                name: "Install osquery",
+                privileged: true,
+                path: "scripts/install_osquery.ps1"
+
+            node.vm.provision "shell",
+                name: "Run osquery queries",
+                privileged: true,
+                path: "scripts/run_queries.ps1",
+                args: ["C:\\queries\\osquery_queries.conf"]
         end
     end
 end
