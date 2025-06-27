@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
             node.vm.synced_folder "../common", "/vagrant/common"
             node.vm.synced_folder "./scripts", "/vagrant/scripts"
             node.vm.synced_folder "./packages", "/vagrant/packages"
-            node.vm.synced_folder "../queries", "/vagrant/queries"
+            node.vm.synced_folder "./queries", "/vagrant/queries"
             node.vm.synced_folder "../results", "/vagrant/results"
 
             node.vm.provider "virtualbox" do |vb|
