@@ -78,7 +78,7 @@ MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
 Navigate to the target platform directory (e.g., `debian/`, `redhat/`, `windows/`) and run:
 
 ```bash
-vagrant up
+vagrant up [vm_name]
 ```
 
 This process will:
@@ -112,13 +112,13 @@ The filename reflects the hostname of the machine for easy identification.
 To rerun a VM from scratch:
 
 ```bash
-vagrant destroy -f && vagrant up
+vagrant destroy -f [vm_name] && vagrant up [vm_name]
 ```
 
 ## 🧹 Clean Up
 
-To shut down and remove all virtual machines:
+To shut down and remove virtual machines:
 
 ```bash
-vagrant destroy -f
+vagrant destroy -f [vm_name]
 ```

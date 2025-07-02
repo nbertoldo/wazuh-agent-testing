@@ -3,7 +3,7 @@
 QUERY_FILE="$1"
 OUTPUT_DIR="/vagrant/results"
 HOSTNAME="$(hostname)"
-OUTPUT_FILE="${OUTPUT_DIR}/osquery_results_${HOSTNAME}.json"
+OUTPUT_FILE="${OUTPUT_DIR}/system_info_${HOSTNAME}.json"
 LOG_FILE="${OUTPUT_DIR}/osquery_errors_${HOSTNAME}.log"
 
 mkdir -p "$OUTPUT_DIR"
@@ -21,9 +21,12 @@ while IFS= read -r QUERY || [[ -n "$QUERY" ]]; do
 
   echo "[INFO] Running query #$QUERY_NUM: $QUERY"
 
+  # Extract the table name from the query
+  # This assumes the table name is after the "FROM" keyword
+  # and is a simple alphanumeric identifier.
+  TABLE_NAME=$(echo "$QUERY" | grep -oiE "FROM +[a-zA-Z0-9_]+" | awk '{print $2}')
+
   # Run the query using osqueryi
-  # Redirect stderr to a temporary file to capture errors
-  # and check the exit code
   RESULT=$(osqueryi --json "$QUERY" 2> /tmp/osquery_error)
   EXIT_CODE=$?
 
@@ -31,11 +34,11 @@ while IFS= read -r QUERY || [[ -n "$QUERY" ]]; do
     ESCAPED_QUERY=$(echo "$QUERY" | sed 's/"/\\"/g')
 
     [[ $FIRST -eq 0 ]] && echo "," >> "$OUTPUT_FILE"
-    echo "  {\"query\": \"$ESCAPED_QUERY\", \"results\": $RESULT}" >> "$OUTPUT_FILE"
+    echo "  {\"table_name\": \"${TABLE_NAME}\", \"query\": \"${ESCAPED_QUERY}\", \"rows\": $RESULT}" >> "$OUTPUT_FILE"
     FIRST=0
     ((SUCCESS_COUNT++))
   else
-    echo "[ERROR] Execution of query #$QUERY_NUM fail" | tee -a "$LOG_FILE"
+    echo "[ERROR] Execution of query #$QUERY_NUM failed" | tee -a "$LOG_FILE"
     echo "Query: $QUERY" >> "$LOG_FILE"
     echo "Error: $(cat /tmp/osquery_error)" >> "$LOG_FILE"
     echo "---" >> "$LOG_FILE"
