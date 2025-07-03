@@ -8,6 +8,7 @@ This repository provides a cross-platform testing environment for Wazuh agents u
 wazuh-agent-testing/
 ├── common/ # Shared scripts across all platforms
 ├── debian/ # Debian/Ubuntu environment
+| ├── config/ # Configuration file ossec.conf
 │ ├── packages/ # Wazuh agent .deb packages
 │ ├── queries/ # osquery queries file
 │ ├── scripts/ # Scripts
@@ -16,11 +17,13 @@ wazuh-agent-testing/
 ├── windows/ # Windows Server/Workstation environment
 ├── macos/ # macOS environment
 ├── results/ # Directory to store testing results
+├── server/ # Scripts to be used in the server
 └── README.md # This file
 ```
 
 Each platform has:
 - Its own `Vagrantfile`
+- A `config/` folder for agent configuration file
 - A `packages/` folder for Wazuh agent installers
 - A `queries/` folder for osquery queries
 - A `scripts/` folder for provisioning
@@ -44,7 +47,17 @@ Place the Wazuh agent installer in the appropriate `packages/` subdirectory depe
 
 ---
 
-### 2. Define osquery Queries
+### 2. Configure the Wazuh Manager Address
+
+The agent installation script replaces the default `ossec.conf` file with the one located in the corresponding `config/` directory depending on the platform.
+
+Before starting the agent, the script applies this file, so any configuration changes, including the Wazuh manager IP address, must be made directly in this file.
+
+Make sure to update the appropriate `ossec.conf` file for your platform with the desired manager IP and any other custom settings before provisioning the agent.
+
+---
+
+### 3. Define osquery Queries
 
 Define the osquery queries you want to run inside the `osquery_queries.conf` file located in each platform’s `queries/` directory.
 
@@ -53,22 +66,6 @@ Example query file (`queries/osquery_queries.conf`):
 ```sql
 SELECT * FROM os_version;
 SELECT name, uid FROM users WHERE shell != '/usr/sbin/nologin';
-```
-
----
-
-### 3. Configure the Wazuh Manager Address
-
-The Wazuh agent is configured automatically to connect to the Wazuh manager using the IP address provided by the `WAZUH_MANAGER_IP` environment variable:
-
-```bash
-export WAZUH_MANAGER_IP=192.168.56.30
-```
-
-Or set the IP address editing the `Vagrantfile`.
-
-```ruby
-MANAGER_IP = ENV['WAZUH_MANAGER_IP'] || "192.168.56.30"
 ```
 
 ---
@@ -98,9 +95,9 @@ Each VM will generate a JSON file:
 
 ```pgsql
 results/
-├── osquery_results_ubuntu2204.json
-├── osquery_results_rhel9.wazuh.test.json
-├── osquery_results_win2022-wazuh-test.json
+├── system_info_ubuntu2204.json
+├── system_info_rhel9.wazuh.test.json
+├── system_info_win2022-wazuh-test.json
 ```
 
 The filename reflects the hostname of the machine for easy identification.
