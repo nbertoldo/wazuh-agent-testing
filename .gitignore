@@ -1,3 +1,5 @@
 .vagrant
-packages/
-results/
+**/packages/*
+!**/packages/.gitkeep
+results/*
+!results/.gitkeep
