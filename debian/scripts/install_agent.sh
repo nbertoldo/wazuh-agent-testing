@@ -11,7 +11,7 @@ fi
 apt-get update
 
 echo "[INFO] Installing Wazuh agent: $AGENT_PKG"
-DEBIAN_FRONTEND=noninteractive apt-get install -y "$AGENT_PKG" || apt-get install -f -y
+DEBIAN_FRONTEND=noninteractive dpkg -i "$AGENT_PKG" || apt-get install -f -y
 
 # Apply custom ossec.conf if exists
 CUSTOM_CONF="/vagrant/config/ossec.conf"
